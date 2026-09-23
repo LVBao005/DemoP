@@ -1,130 +1,202 @@
 import React, { useState } from 'react';
-import { Tag, Plus, Edit2, Check, AlertCircle } from 'lucide-react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 
 export const MobileCategoriesScreen: React.FC = () => {
   const { categories, transactions, updateCategoryBudget, language } = useApp();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [val, setVal] = useState('');
   const isVi = language === 'vi';
 
-  const [editingCatId, setEditingCatId] = useState<string | null>(null);
-  const [newBudgetVal, setNewBudgetVal] = useState<string>('');
-
-  const handleStartEdit = (catId: string, currentBudget: number) => {
-    setEditingCatId(catId);
-    setNewBudgetVal(currentBudget.toString());
-  };
-
-  const handleSaveBudget = (catId: string) => {
-    const num = parseInt(newBudgetVal.replace(/[^0-9]/g, ''), 10);
+  const handleSave = (catId: string) => {
+    const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
     if (!isNaN(num)) {
       updateCategoryBudget(catId, num);
     }
-    setEditingCatId(null);
+    setEditingId(null);
   };
 
   return (
-    <div className="w-full space-y-4 p-4 pb-28">
-      <div>
-        <h2 className="text-lg font-black text-slate-900">
-          {isVi ? 'Hạn Mức Danh Mục 🏷️' : 'Category Budgets 🏷️'}
-        </h2>
-        <p className="text-xs text-slate-500">
-          {isVi ? 'Thiết lập và theo dõi ngân sách cho từng mục' : 'Set and track spending limits per category'}
-        </p>
-      </div>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={styles.title}>
+        {isVi ? 'Hạn mức chi tiêu 🏷️' : 'Category Budgets 🏷️'}
+      </Text>
+      <Text style={styles.subtitle}>
+        {isVi ? 'Kiểm soát dòng tiền thông minh theo từng mục' : 'Set mindful spending limits per category'}
+      </Text>
 
-      <div className="space-y-3">
+      <View style={styles.list}>
         {categories
           .filter((c) => c.id !== 'income')
           .map((cat) => {
             const spent = transactions
               .filter((t) => t.type === 'expense' && t.categoryId === cat.id)
-              .reduce((acc, cur) => acc + cur.amount, 0);
-
-            const percent = cat.monthlyBudget > 0 ? Math.min(100, (spent / cat.monthlyBudget) * 100) : 0;
-            const isOver = spent > cat.monthlyBudget && cat.monthlyBudget > 0;
+              .reduce((s, i) => s + i.amount, 0);
+            const budget = cat.budget || 2000000;
+            const pct = Math.min(Math.round((spent / budget) * 100), 100);
 
             return (
-              <div
-                key={cat.id}
-                className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shrink-0"
-                      style={{ backgroundColor: cat.bgColor, color: cat.color }}
-                    >
-                      {cat.id === 'food' ? '🍕' : cat.id === 'shopping' ? '🛍️' : cat.id === 'transport' ? '🚗' : cat.id === 'activities' ? '✨' : '🧾'}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">
-                        {isVi ? cat.nameVi : cat.nameEn}
-                      </h4>
-                      <div className="text-[10px] text-slate-500">
-                        Đã chi: {spent.toLocaleString('vi-VN')} đ
-                      </div>
-                    </div>
-                  </div>
+              <View key={cat.id} style={styles.item}>
+                <View style={styles.itemHeader}>
+                  <Text style={styles.catIcon}>{cat.icon}</Text>
+                  <View style={styles.catInfo}>
+                    <Text style={styles.catName}>{cat.name}</Text>
+                    <Text style={styles.spentText}>
+                      {isVi ? 'Đã chi' : 'Spent'}: {spent.toLocaleString('vi-VN')} ₫ / {budget.toLocaleString('vi-VN')} ₫
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    onPress={() => {
+                      setEditingId(cat.id);
+                      setVal(budget.toString());
+                    }}
+                  >
+                    <Ionicons name="pencil" size={14} color="#047857" />
+                  </TouchableOpacity>
+                </View>
 
-                  <div className="text-right">
-                    {editingCatId === cat.id ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          value={newBudgetVal}
-                          onChange={(e) => setNewBudgetVal(e.target.value)}
-                          className="w-24 px-2 py-1 text-xs border border-emerald-500 rounded-lg focus:outline-none"
-                        />
-                        <button
-                          onClick={() => handleSaveBudget(cat.id)}
-                          className="p-1 bg-emerald-600 text-white rounded-lg"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleStartEdit(cat.id, cat.monthlyBudget)}
-                        className="group flex items-center gap-1 text-right"
-                      >
-                        <div>
-                          <div className="text-xs font-black text-slate-900">
-                            {cat.monthlyBudget.toLocaleString('vi-VN')} đ
-                          </div>
-                          <span className="text-[9px] text-slate-400 group-hover:text-emerald-600">
-                            Chạm để sửa
-                          </span>
-                        </div>
-                        <Edit2 className="w-3 h-3 text-slate-300 group-hover:text-emerald-600" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isOver ? 'bg-rose-500' : 'bg-emerald-500'
-                    }`}
-                    style={{ width: `${percent}%` }}
+                {/* Progress */}
+                <View style={styles.barBg}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        width: `${pct}%`,
+                        backgroundColor: pct > 90 ? '#EF4444' : '#10B981',
+                      },
+                    ]}
                   />
-                </div>
+                </View>
 
-                <div className="flex justify-between text-[10px] text-slate-500">
-                  <span className={isOver ? 'text-rose-600 font-bold' : ''}>
-                    {percent.toFixed(0)}% hạn mức
-                  </span>
-                  <span>
-                    Còn lại:{' '}
-                    {Math.max(0, cat.monthlyBudget - spent).toLocaleString('vi-VN')} đ
-                  </span>
-                </div>
-              </div>
+                {editingId === cat.id && (
+                  <View style={styles.editRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={val}
+                      onChangeText={setVal}
+                      keyboardType="numeric"
+                      placeholder="Ngân sách mới..."
+                    />
+                    <TouchableOpacity
+                      style={styles.saveBtn}
+                      onPress={() => handleSave(cat.id)}
+                    >
+                      <Text style={styles.saveBtnText}>{isVi ? 'Lưu' : 'Save'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             );
           })}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 90,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 16,
+    marginTop: 2,
+  },
+  list: {
+    gap: 12,
+  },
+  item: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  catIcon: {
+    fontSize: 24,
+    marginRight: 10,
+  },
+  catInfo: {
+    flex: 1,
+  },
+  catName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  spentText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  editBtn: {
+    padding: 6,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 8,
+  },
+  barBg: {
+    height: 8,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+  },
+  editRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    height: 38,
+    fontSize: 13,
+  },
+  saveBtn: {
+    backgroundColor: '#047857',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+});

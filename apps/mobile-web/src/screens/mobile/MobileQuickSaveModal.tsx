@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Camera, Plus, Zap } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface MobileQuickSaveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (amount: number, category: string, note?: string) => void;
   onOpenFullAdd?: () => void;
-  onOpenCamera?: () => void;
 }
 
 const PRESET_AMOUNTS = [20000, 35000, 50000, 80000, 100000, 150000];
@@ -28,179 +35,232 @@ export const MobileQuickSaveModal: React.FC<MobileQuickSaveModalProps> = ({
   onClose,
   onSave,
   onOpenFullAdd,
-  onOpenCamera,
 }) => {
   const [selectedAmount, setSelectedAmount] = useState<number>(35000);
   const [selectedCategory, setSelectedCategory] = useState<string>('Cà phê');
-  const [customNote, setCustomNote] = useState('');
+  const [note, setNote] = useState('');
 
   if (!isOpen) return null;
 
-  const handleQuickSave = () => {
-    onSave(selectedAmount, selectedCategory, customNote || undefined);
-    try {
-      confetti({
-        particleCount: 30,
-        spread: 50,
-        origin: { y: 0.8 },
-      });
-    } catch (e) {
-      // ignore
-    }
+  const handleSave = () => {
+    onSave(selectedAmount, selectedCategory, note || undefined);
+    setNote('');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div
-        className="w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drag handle */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4" />
+    <Modal
+      visible={isOpen}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.modalBox}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={styles.flashBadge}>
+                <Ionicons name="flash" size={14} color="#047857" />
+              </View>
+              <Text style={styles.title}>Lưu nhanh chi tiêu ⚡</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <Ionicons name="close" size={20} color="#64748B" />
+            </TouchableOpacity>
+          </View>
 
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800 text-base">Lưu nhanh 1-chạm</h3>
-              <p className="text-xs text-slate-500">Ghi lại khoản chi tức thì chỉ trong 3 giây</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Selected amount preview hero */}
-        <div className="my-4 p-4 rounded-2xl bg-emerald-50/80 border border-emerald-100 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">
-              Số tiền ghi nhận
-            </span>
-            <div className="text-2xl font-black text-emerald-900 mt-0.5">
-              -{selectedAmount.toLocaleString('vi-VN')} đ
-            </div>
-          </div>
-          <div className="text-right">
-            <span className="text-xs text-slate-500 font-medium">Danh mục</span>
-            <div className="text-sm font-bold text-slate-800 flex items-center gap-1 justify-end">
-              <span>{QUICK_CATEGORIES.find((c) => c.name === selectedCategory)?.icon || '💸'}</span>
-              <span>{selectedCategory}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Preset amounts grid */}
-        <div className="mb-4">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block">
-            1. Chọn số tiền
-          </label>
-          <div className="grid grid-cols-3 gap-2">
+          {/* Amount presets */}
+          <Text style={styles.label}>CHỌN SỐ TIỀN</Text>
+          <View style={styles.amountGrid}>
             {PRESET_AMOUNTS.map((amt) => {
               const active = selectedAmount === amt;
               return (
-                <button
+                <TouchableOpacity
                   key={amt}
-                  type="button"
-                  onClick={() => setSelectedAmount(amt)}
-                  className={`py-2.5 px-2 rounded-xl text-center font-bold text-xs transition-all ${
-                    active
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-[1.02]'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  style={[styles.amtBtn, active && styles.amtBtnActive]}
+                  onPress={() => setSelectedAmount(amt)}
                 >
-                  {amt.toLocaleString('vi-VN')} đ
-                </button>
+                  <Text style={[styles.amtText, active && styles.amtTextActive]}>
+                    {(amt / 1000).toString()}k
+                  </Text>
+                </TouchableOpacity>
               );
             })}
-          </div>
-        </div>
+          </View>
 
-        {/* Quick category chips */}
-        <div className="mb-4">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block">
-            2. Cho mục đích gì?
-          </label>
-          <div className="grid grid-cols-4 gap-2">
+          {/* Category selection */}
+          <Text style={styles.label}>DANH MỤC</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll}>
             {QUICK_CATEGORIES.map((cat) => {
               const active = selectedCategory === cat.name;
               return (
-                <button
+                <TouchableOpacity
                   key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`p-2.5 rounded-xl flex flex-col items-center gap-1 text-center transition-all ${
-                    active
-                      ? 'bg-emerald-100/80 border-2 border-emerald-600 text-emerald-900 font-bold scale-[1.02]'
-                      : 'bg-slate-50 border border-slate-200/80 text-slate-600 hover:bg-slate-100'
-                  }`}
+                  style={[styles.catBtn, active && styles.catBtnActive]}
+                  onPress={() => setSelectedCategory(cat.name)}
                 >
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-[11px] leading-tight truncate w-full">{cat.name}</span>
-                </button>
+                  <Text style={styles.catIcon}>{cat.icon}</Text>
+                  <Text style={[styles.catName, active && styles.catNameActive]}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
               );
             })}
-          </div>
-        </div>
+          </ScrollView>
 
-        {/* Optional note input */}
-        <div className="mb-5">
-          <input
-            type="text"
-            placeholder="Thêm ghi chú ngắn (tùy chọn)..."
-            value={customNote}
-            onChange={(e) => setCustomNote(e.target.value)}
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
+          {/* Note Input */}
+          <Text style={styles.label}>GHI CHÚ (TÙY CHỌN)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ví dụ: Cà phê muối sáng, phở bò..."
+            value={note}
+            onChangeText={setNote}
           />
-        </div>
 
-        {/* Action buttons */}
-        <div className="space-y-2">
-          <button
-            onClick={handleQuickSave}
-            className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Lưu Khoản Chi ({selectedAmount.toLocaleString('vi-VN')} đ)</span>
-          </button>
-
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            {onOpenCamera && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenCamera();
-                }}
-                className="py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-1.5"
-              >
-                <Camera className="w-4 h-4 text-emerald-600" />
-                <span>Chụp ảnh hóa đơn</span>
-              </button>
-            )}
-            {onOpenFullAdd && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenFullAdd();
-                }}
-                className="py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-4 h-4 text-emerald-600" />
-                <span>Nhập chi tiết</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+          {/* Save button */}
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+            <Text style={styles.saveBtnText}>
+              Lưu ngay • {selectedAmount.toLocaleString('vi-VN')} ₫
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalBox: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  flashBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.8,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  amountGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  amtBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  amtBtnActive: {
+    backgroundColor: '#047857',
+  },
+  amtText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  amtTextActive: {
+    color: '#FFFFFF',
+  },
+  catScroll: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  catBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginRight: 8,
+  },
+  catBtnActive: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#047857',
+  },
+  catIcon: {
+    fontSize: 16,
+  },
+  catName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  catNameActive: {
+    color: '#047857',
+    fontWeight: '700',
+  },
+  input: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    height: 42,
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  saveBtn: {
+    backgroundColor: '#047857',
+    borderRadius: 14,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+});

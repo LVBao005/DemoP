@@ -8,8 +8,10 @@ import { AuthScreen } from './src/screens/web/AuthScreen';
 import { LandingScreen } from './src/screens/web/LandingScreen';
 import { MobileAuthScreen } from './src/screens/mobile/MobileAuthScreen';
 import { MobileHomeScreen } from './src/screens/mobile/MobileHomeScreen';
+import { MobileApp } from './src/screens/mobile/MobileApp';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
+import { AppProvider } from './src/context/AppContext';
 
 function MainApp() {
   const { user, isLoading } = useAuth();
@@ -77,7 +79,7 @@ function MainApp() {
 
   // Khi người dùng ĐÃ đăng nhập trên thiết bị Mobile (Điện thoại hoặc màn hình nhỏ):
   if (isMobileScreen) {
-    return <MobileHomeScreen />;
+    return <MobileApp />;
   }
 
   const renderContent = () => {
@@ -157,8 +159,10 @@ export default function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
-        <MainApp />
+        <AppProvider>
+          <StatusBar style="dark" />
+          <MainApp />
+        </AppProvider>
       </AuthProvider>
     </LanguageProvider>
   );

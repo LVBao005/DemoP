@@ -1,193 +1,251 @@
 import React, { useState } from 'react';
-import { Camera, Sparkles, Plus, Image as ImageIcon, Search, Tag, Eye } from 'lucide-react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  StyleSheet,
+  TextInput,
+  Dimensions,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { Transaction } from '../types';
 
 interface MobileMomentsScreenProps {
-  onOpenCamera: () => void;
-  onViewPhoto: (url: string) => void;
+  onOpenCamera?: () => void;
+  onViewPhoto?: (url: string) => void;
   onSelectTransaction?: (tx: Transaction) => void;
 }
 
+const { width } = Dimensions.get('window');
+const cardWidth = (width - 48) / 2;
+
 export const MobileMomentsScreen: React.FC<MobileMomentsScreenProps> = ({
-  onOpenCamera,
-  onViewPhoto,
   onSelectTransaction,
 }) => {
-  const { transactions, moments, language } = useApp();
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-
+  const { transactions, language } = useApp();
+  const [filterCat, setFilterCat] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const isVi = language === 'vi';
 
-  // Extract items with photos or transactions
-  const photoItems = transactions.filter((t) => t.photoUrl);
-
-  const filteredItems = photoItems.filter((item) => {
-    const matchesCategory = filterCategory === 'all' || item.categoryId === filterCategory;
-    const matchesSearch =
-      !searchQuery ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.note && item.note.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
+  const photoItems = transactions.filter((t) => !!t.photoUrl);
+  const filtered = photoItems.filter((item) => {
+    const matchCat = filterCat === 'all' || item.categoryId === filterCat;
+    const matchSearch =
+      !search ||
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      (item.note && item.note.toLowerCase().includes(search.toLowerCase()));
+    return matchCat && matchSearch;
   });
 
   return (
-    <div className="w-full space-y-4 p-4 pb-28">
-      {/* ============================================================ */}
-      {/* 1. HERO BANNER                                               */}
-      {/* ============================================================ */}
-      <div className="rounded-3xl bg-gradient-to-r from-emerald-800 to-teal-800 p-5 text-white shadow-lg relative overflow-hidden">
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="max-w-[70%]">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-white/10 px-2 py-0.5 rounded-full">
-              Locket Money Diary
-            </span>
-            <h2 className="text-lg font-black mt-1 leading-snug">
-              {isVi ? 'Khoảnh Khắc Chi Tiêu 📸' : 'Expense Moments 📸'}
-            </h2>
-            <p className="text-xs text-emerald-100/80 mt-1">
-              {isVi
-                ? 'Mỗi món chi là một khoảnh khắc sống động của bạn cùng Monett'
-                : 'Every bill is a vivid moment of your financial journey'}
-            </p>
-          </div>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Banner */}
+      <View style={styles.banner}>
+        <View style={styles.bannerBadge}>
+          <Text style={styles.bannerBadgeText}>Locket Money Diary</Text>
+        </View>
+        <Text style={styles.bannerTitle}>
+          {isVi ? 'Nhật ký khoảnh khắc chi tiêu 📸' : 'Photo Expense Diary 📸'}
+        </Text>
+        <Text style={styles.bannerSub}>
+          {isVi
+            ? 'Mỗi bức ảnh là một trải nghiệm sống đáng giá'
+            : 'Every photo is a memorable spending moment'}
+        </Text>
+      </View>
 
-          <button
-            onClick={onOpenCamera}
-            className="p-3 rounded-2xl bg-white text-slate-900 font-bold text-xs shadow-md active:scale-95 transition-all flex flex-col items-center gap-1 shrink-0"
+      {/* Search Bar */}
+      <View style={styles.searchBox}>
+        <Ionicons name="search-outline" size={18} color="#94A3B8" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={isVi ? 'Tìm kiếm món ăn, địa điểm, ghi chú...' : 'Search meals, places, notes...'}
+          value={search}
+          onChangeText={setSearch}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')}>
+            <Ionicons name="close-circle" size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Grid of Moments */}
+      <View style={styles.grid}>
+        {filtered.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.card}
+            onPress={() => onSelectTransaction && onSelectTransaction(item)}
+            activeOpacity={0.8}
           >
-            <Camera className="w-5 h-5 text-emerald-600" />
-            <span>{isVi ? 'Chụp ngay' : 'Snap'}</span>
-          </button>
-        </div>
-      </div>
+            <Image source={{ uri: item.photoUrl }} style={styles.cardImg} />
+            <View style={styles.cardOverlay}>
+              <Text style={styles.cardAmount}>
+                {item.amount.toLocaleString('vi-VN')} ₫
+              </Text>
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <Text style={styles.cardDate}>
+                {item.date} {item.time ? `• ${item.time}` : ''}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-      {/* ============================================================ */}
-      {/* 2. SEARCH & FILTER CHIPS                                     */}
-      {/* ============================================================ */}
-      <div className="space-y-2">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder={isVi ? 'Tìm kiếm khoảnh khắc, địa điểm...' : 'Search moments, location...'}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200/80 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
-
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-          {['all', 'food', 'activities', 'shopping', 'transport'].map((cat) => {
-            const active = filterCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setFilterCategory(cat)}
-                className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all ${
-                  active
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {cat === 'all'
-                  ? isVi
-                    ? 'Tất cả'
-                    : 'All'
-                  : cat === 'food'
-                  ? '🍜 Ẩm thực'
-                  : cat === 'activities'
-                  ? '✨ Giải trí'
-                  : cat === 'shopping'
-                  ? '🛍️ Mua sắm'
-                  : '🚗 Di chuyển'}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* 3. MOMENTS GRID                                              */}
-      {/* ============================================================ */}
-      {filteredItems.length === 0 ? (
-        <div className="p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-3">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-            <ImageIcon className="w-8 h-8" />
-          </div>
-          <h4 className="font-bold text-slate-800 text-sm">
-            {isVi ? 'Chưa có ảnh chi tiêu nào' : 'No photo moments yet'}
-          </h4>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto">
+      {filtered.length === 0 && (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyEmoji}>📷</Text>
+          <Text style={styles.emptyTitle}>
+            {isVi ? 'Chưa có ảnh nào' : 'No photos yet'}
+          </Text>
+          <Text style={styles.emptyDesc}>
             {isVi
-              ? 'Hãy mở camera chụp lại bữa trưa, ly cà phê hoặc hóa đơn để tạo album ảnh chi tiêu!'
-              : 'Open the camera and snap your meal, coffee or receipt to build your visual diary!'}
-          </p>
-          <button
-            onClick={onOpenCamera}
-            className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-2"
-          >
-            <Camera className="w-4 h-4" />
-            <span>{isVi ? 'Chụp ảnh ngay' : 'Take a photo'}</span>
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="group relative rounded-2xl overflow-hidden bg-white border border-slate-200/80 shadow-sm flex flex-col hover:shadow-md transition-all"
-            >
-              {/* Photo box with price pill */}
-              <div
-                className="relative aspect-square w-full bg-slate-900 cursor-pointer overflow-hidden"
-                onClick={() => item.photoUrl && onViewPhoto(item.photoUrl)}
-              >
-                <img
-                  src={item.photoUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-
-                {/* Price tag pill */}
-                <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full text-white text-[11px] font-black tracking-tight border border-white/20">
-                  -{item.amount.toLocaleString('vi-VN')} đ
-                </div>
-
-                <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-md p-1 rounded-full text-white">
-                  <Eye className="w-3 h-3" />
-                </div>
-              </div>
-
-              {/* Card info */}
-              <div
-                className="p-2.5 flex-1 flex flex-col justify-between cursor-pointer hover:bg-slate-50/70 transition-colors"
-                onClick={() => onSelectTransaction && onSelectTransaction(item)}
-              >
-                <div>
-                  <h4 className="font-bold text-xs text-slate-900 truncate leading-snug">
-                    {item.title}
-                  </h4>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
-                    <span className="capitalize">{item.categoryId}</span>
-                    <span>{item.time || 'Hôm nay'}</span>
-                  </div>
-                </div>
-
-                {item.note && (
-                  <p className="text-[10px] text-slate-500 italic line-clamp-2 mt-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                    "{item.note}"
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              ? 'Hãy chụp hoặc thêm ảnh khi chi tiêu để lưu giữ kỷ niệm nhé!'
+              : 'Add photo when spending to keep your memories!'}
+          </Text>
+        </View>
       )}
-    </div>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 90,
+  },
+  banner: {
+    backgroundColor: '#064E3B',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+  },
+  bannerBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  bannerBadgeText: {
+    color: '#6EE7B7',
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  bannerTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  bannerSub: {
+    fontSize: 12,
+    color: '#A7F3D0',
+    lineHeight: 16,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  card: {
+    width: cardWidth,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardImg: {
+    width: '100%',
+    height: 140,
+    backgroundColor: '#E2E8F0',
+  },
+  cardOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  cardAmount: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  cardBody: {
+    padding: 10,
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  cardDate: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  emptyBox: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  emptyDesc: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 4,
+    maxWidth: 240,
+  },
+});

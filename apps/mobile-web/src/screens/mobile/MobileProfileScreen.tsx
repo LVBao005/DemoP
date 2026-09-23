@@ -1,269 +1,214 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ChevronLeft,
-  ChevronRight,
-  Shield,
-  Bell,
-  Compass,
-  Cloud,
-  Sun,
-  HelpCircle,
-  Info,
-  LogOut,
-  Pencil,
-  Check,
-} from 'lucide-react';
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  StyleSheet,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 
-interface MobileProfileScreenProps {
-  onBack?: () => void;
-  onNavigateTab?: (tab: string) => void;
-}
-
-export const MobileProfileScreen: React.FC<MobileProfileScreenProps> = ({
-  onBack,
-  onNavigateTab,
-}) => {
+export const MobileProfileScreen: React.FC = () => {
   const { user, logout, language, setLanguage } = useApp();
   const isVi = language === 'vi';
 
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [emailValue, setEmailValue] = useState(user?.email || 'baole@example.com');
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
-  const [showToast, setShowToast] = useState<string | null>(null);
-
   const displayName = user?.fullName || 'Lê Văn Bảo';
-  const avatarUrl =
-    user?.avatarUrl ||
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDBWjEp71LrnWFnr38D8UDrmR2e-7t748gezNnm9O6fPkicudd7wypk7hW_uTldzDz_2Wwmh2I6oJlYBX4Q0q25sSZs2UqAMUpMJ_FBRC9yQfHnixAwXbMk40Bspci4KfTBa2Buq7iGpSJo40o7CVxidg4bp5QZ9PMylgt66TxuTKZa0UlU9Apkio-o6LiaO_lHsomjpCaZEI2yA8jNRj7eJEZ5mhPAAzjNUWiQrUIA09IFWiHTcdfZ';
+  const email = user?.email || 'baole.tanquoc@gmail.com';
 
-  const handleActionClick = (title: string, tabTarget?: string) => {
-    if (tabTarget && onNavigateTab) {
-      onNavigateTab(tabTarget);
-      return;
-    }
-    setShowToast(`Đã mở: ${title}`);
-    setTimeout(() => setShowToast(null), 2000);
+  const handleLogout = () => {
+    Alert.alert(
+      isVi ? 'Đăng xuất' : 'Sign Out',
+      isVi ? 'Bạn có chắc chắn muốn đăng xuất không?' : 'Are you sure you want to sign out?',
+      [
+        { text: isVi ? 'Hủy' : 'Cancel', style: 'cancel' },
+        { text: isVi ? 'Đăng xuất' : 'Sign Out', style: 'destructive', onPress: logout },
+      ]
+    );
   };
 
   return (
-    <div className="w-full bg-[#FDFDFD] min-h-[640px] text-neutral-800 font-sans select-none flex flex-col justify-between pb-28">
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs font-semibold py-2 px-4 rounded-full shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2">
-          {showToast}
-        </div>
-      )}
-
-      <div>
-        {/* BEGIN: NavigationBackHeader */}
-        <nav className="w-full px-5 py-2.5 flex items-center">
-          <button
-            type="button"
-            aria-label="Quay lại"
-            onClick={onBack}
-            className="p-2 -ml-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="w-5 h-5 text-neutral-800 stroke-[2.2]" />
-          </button>
-        </nav>
-        {/* END: NavigationBackHeader */}
-
-        {/* BEGIN: UserProfileSection */}
-        <section className="px-6 pt-1 pb-6 flex items-center" data-purpose="user-profile">
-          {/* Avatar circle container */}
-          <div className="relative shrink-0">
-            <img
-              alt={`Ảnh đại diện ${displayName}`}
-              className="w-[62px] h-[62px] rounded-full object-cover shadow-xs ring-1 ring-gray-100"
-              src={avatarUrl}
-            />
-          </div>
-
-          {/* User Information */}
-          <div className="ml-4 flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-neutral-900 leading-tight truncate">
-              {displayName}
-            </h1>
-            <div className="flex items-center mt-1 space-x-1.5 text-neutral-400">
-              {isEditingEmail ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="email"
-                    value={emailValue}
-                    onChange={(e) => setEmailValue(e.target.value)}
-                    className="text-xs px-2 py-0.5 rounded border border-neutral-300 text-neutral-800 w-36 focus:outline-none focus:border-teal-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingEmail(false)}
-                    className="p-1 rounded bg-teal-600 text-white"
-                  >
-                    <Check className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span className="text-xs tracking-tight truncate text-neutral-400">
-                    {emailValue}
-                  </span>
-                  {/* Edit Icon */}
-                  <button
-                    type="button"
-                    aria-label="Chỉnh sửa email"
-                    onClick={() => setIsEditingEmail(true)}
-                    className="text-neutral-400 hover:text-neutral-600 focus:outline-none cursor-pointer p-0.5"
-                  >
-                    <Pencil className="w-3.5 h-3.5 stroke-[1.8]" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
-        {/* END: UserProfileSection */}
-
-        {/* BEGIN: SettingsMenuList (Matches HTML item list) */}
-        <section className="flex-1 px-5 divide-y divide-gray-100" data-purpose="settings-menu">
-          {/* Item 1: Tài khoản & bảo mật */}
-          <button
-            type="button"
-            onClick={() => handleActionClick('Tài khoản & bảo mật')}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <Shield className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Tài khoản & bảo mật' : 'Account & Security'}
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-          </button>
-
-          {/* Item 2: Thông báo */}
-          <button
-            type="button"
-            onClick={() => handleActionClick('Thông báo')}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <Bell className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Thông báo' : 'Notifications'}
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-          </button>
-
-          {/* Item 3: Ngân sách */}
-          <button
-            type="button"
-            onClick={() => handleActionClick('Ngân sách', 'categories')}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <Compass className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Ngân sách' : 'Budgets'}
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-          </button>
-
-          {/* Item 4: Đồng bộ dữ liệu */}
-          <button
-            type="button"
-            onClick={() => handleActionClick('Đồng bộ dữ liệu')}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <Cloud className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Đồng bộ dữ liệu' : 'Data Synchronization'}
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-          </button>
-
-          {/* Item 5: Giao diện */}
-          <button
-            type="button"
-            onClick={() => {
-              const nextTheme = themeMode === 'light' ? 'dark' : 'light';
-              setThemeMode(nextTheme);
-              handleActionClick(`Chế độ giao diện: ${nextTheme === 'light' ? 'Sáng' : 'Tối'}`);
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Profile Header Card */}
+      <View style={styles.card}>
+        <View style={styles.avatarRow}>
+          <Image
+            source={{
+              uri:
+                user?.avatarUrl ||
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuDBWjEp71LrnWFnr38D8UDrmR2e-7t748gezNnm9O6fPkicudd7wypk7hW_uTldzDz_2Wwmh2I6oJlYBX4Q0q25sSZs2UqAMUpMJ_FBRC9yQfHnixAwXbMk40Bspci4KfTBa2Buq7iGpSJo40o7CVxidg4bp5QZ9PMylgt66TxuTKZa0UlU9Apkio-o6LiaO_lHsomjpCaZEI2yA8jNRj7eJEZ5mhPAAzjNUWiQrUIA09IFWiHTcdfZ',
             }}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <Sun className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Giao diện' : 'Theme'}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-neutral-400">
-                {themeMode === 'light' ? 'Sáng' : 'Tối'}
-              </span>
-              <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-            </div>
-          </button>
+            style={styles.avatar}
+          />
+          <View style={styles.info}>
+            <Text style={styles.name}>{displayName}</Text>
+            <Text style={styles.email}>{email}</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>🛡️ Monett Pioneer</Text>
+            </View>
+          </View>
+        </View>
+      </View>
 
-          {/* Item 6: Trợ giúp & Hỗ trợ */}
-          <button
-            type="button"
-            onClick={() => handleActionClick('Trợ giúp & Hỗ trợ')}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <HelpCircle className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Trợ giúp & Hỗ trợ' : 'Help & Support'}
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-          </button>
+      {/* Settings list */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>{isVi ? 'Cài đặt chung' : 'Settings'}</Text>
 
-          {/* Item 7: Giới thiệu Monett */}
-          <button
-            type="button"
-            onClick={() => handleActionClick('Giới thiệu Monett (Phiên bản v2.4)')}
-            className="w-full py-3.5 flex items-center justify-between group transition-colors cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-3.5">
-              <Info className="w-5 h-5 text-neutral-700 stroke-[1.8]" />
-              <span className="text-sm font-medium text-neutral-800">
-                {isVi ? 'Giới thiệu Monett' : 'About Monett'}
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" />
-          </button>
-        </section>
-        {/* END: SettingsMenuList */}
-      </div>
-
-      {/* BEGIN: LogoutAction (Matches HTML soft red card button) */}
-      <div className="px-5 py-6">
-        <button
-          type="button"
-          onClick={() => {
-            if (
-              window.confirm(
-                isVi
-                  ? 'Bạn có chắc chắn muốn đăng xuất tài khoản?'
-                  : 'Are you sure you want to log out?'
-              )
-            ) {
-              logout();
-            }
-          }}
-          className="w-full py-3 px-4 rounded-xl bg-[#FEECEE] hover:bg-[#fedde0] text-[#D83A52] flex items-center justify-center space-x-2 text-xs font-medium active:opacity-85 transition-opacity cursor-pointer shadow-xs"
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => setLanguage(isVi ? 'en' : 'vi')}
+          activeOpacity={0.7}
         >
-          <LogOut className="w-4 h-4 stroke-[1.8]" />
-          <span>{isVi ? 'Đăng xuất' : 'Log Out'}</span>
-        </button>
-      </div>
-      {/* END: LogoutAction */}
-    </div>
+          <View style={styles.itemLeft}>
+            <Ionicons name="globe-outline" size={20} color="#047857" />
+            <Text style={styles.itemText}>{isVi ? 'Ngôn ngữ' : 'Language'}</Text>
+          </View>
+          <Text style={styles.itemVal}>{isVi ? 'Tiếng Việt' : 'English'}</Text>
+        </TouchableOpacity>
+
+        <View style={styles.item}>
+          <View style={styles.itemLeft}>
+            <Ionicons name="moon-outline" size={20} color="#64748B" />
+            <Text style={styles.itemText}>{isVi ? 'Chế độ giao diện' : 'Appearance'}</Text>
+          </View>
+          <Text style={styles.itemVal}>{isVi ? 'Sáng' : 'Light'}</Text>
+        </View>
+
+        <View style={styles.item}>
+          <View style={styles.itemLeft}>
+            <Ionicons name="shield-checkmark-outline" size={20} color="#64748B" />
+            <Text style={styles.itemText}>{isVi ? 'Bảo mật & Mã PIN' : 'Security'}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+        </View>
+      </View>
+
+      {/* Logout button */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={handleLogout}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+        <Text style={styles.logoutText}>{isVi ? 'Đăng xuất tài khoản' : 'Sign Out'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 90,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginBottom: 20,
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#10B981',
+    marginRight: 14,
+  },
+  info: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  email: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  badge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  badgeText: {
+    fontSize: 10,
+    color: '#047857',
+    fontWeight: '700',
+  },
+  section: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  item: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+  },
+  itemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  itemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  itemVal: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    borderRadius: 16,
+    paddingVertical: 14,
+  },
+  logoutText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EF4444',
+  },
+});

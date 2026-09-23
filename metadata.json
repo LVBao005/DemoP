@@ -1,0 +1,7 @@
+{
+  "name": "Monett - Money Moments Expense Tracker",
+  "description": "Smart visual expense tracker and money moments mobile app with category budgets, visual expense diary, and financial insights.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
