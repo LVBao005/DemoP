@@ -1,1367 +1,419 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  SafeAreaView,
-  StatusBar,
-  Modal,
-  TextInput,
-  Alert,
-  Platform,
-  Dimensions,
-} from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { MobileCameraScreen } from './MobileCameraScreen';
+  Bell,
+  Calendar,
+  ArrowDown,
+  ChevronRight,
+  Camera,
+  Plus,
+  Zap,
+  TrendingDown,
+  Sparkles,
+} from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { Transaction } from '../types';
+import { MonettLogo } from '../components/MonettLogo';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-export type MobileTab = 'camera' | 'home' | 'journal' | 'profile';
-
-export interface TransactionItem {
-  id: string;
-  title: string;
-  category: string;
-  categoryIcon: string;
-  amount: number;
-  time: string;
-  note?: string;
-  photoUri?: string;
-  type: 'expense' | 'income';
+interface MobileHomeScreenProps {
+  onNavigateTab: (tab: 'home' | 'camera' | 'moments' | 'analytics' | 'wallets' | 'categories' | 'profile') => void;
+  onOpenQuickSave: () => void;
+  onOpenAddExpense: () => void;
+  onSelectTransaction: (tx: Transaction) => void;
+  onViewPhoto: (url: string) => void;
 }
 
-const INITIAL_TRANSACTIONS: TransactionItem[] = [
-  {
-    id: 'tx-1',
-    title: "Pizza 4P's Bến Thành",
-    category: 'Ẩm thực',
-    categoryIcon: '🍕',
-    amount: -450000,
-    time: '12:35',
-    note: 'Ăn trưa cùng nhóm bạn thân',
-    photoUri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop',
-    type: 'expense',
-  },
-  {
-    id: 'tx-2',
-    title: 'Cà phê sáng Highlands',
-    category: 'Đồ uống',
-    categoryIcon: '☕',
-    amount: -65000,
-    time: '08:30',
-    note: 'Năng lượng chạy deadline',
-    photoUri: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600&auto=format&fit=crop',
-    type: 'expense',
-  },
-  {
-    id: 'tx-3',
-    title: 'GrabCar gặp đối tác',
-    category: 'Di chuyển',
-    categoryIcon: '🚗',
-    amount: -85000,
-    time: '14:20',
-    note: 'Gặp gỡ khách hàng Quận 1',
-    type: 'expense',
-  },
-  {
-    id: 'tx-4',
-    title: 'Siêu thị WinMart',
-    category: 'Nhu yếu phẩm',
-    categoryIcon: '🛍️',
-    amount: -920000,
-    time: '18:15',
-    note: 'Mua sắm thực phẩm cho tuần',
-    type: 'expense',
-  },
-  {
-    id: 'tx-5',
-    title: 'Thưởng dự án Freelance',
-    category: 'Thu nhập phụ',
-    categoryIcon: '💰',
-    amount: 1200000,
-    time: '10:00',
-    note: 'Thanh toán hoàn tất thiết kế UI',
-    type: 'income',
-  },
-];
-
+// Days of week corresponding to the HTML design
 const WEEK_DAYS = [
-  { label: 'Th 2', date: 14 },
-  { label: 'Th 3', date: 15 },
-  { label: 'Th 4', date: 16 },
-  { label: 'Th 5', date: 17 },
-  { label: 'Th 6', date: 18 },
-  { label: 'Th 7', date: 19 },
-  { label: 'CN', date: 20 },
+  {
+    day: 'T2',
+    date: '9/9',
+    amount: '85k',
+    num: 85000,
+    imageUrl: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=100&auto=format&fit=crop&q=80',
+    title: 'Phở bò tái lăn',
+  },
+  {
+    day: 'T3',
+    date: '10/9',
+    amount: '45k',
+    num: 45000,
+    imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=100&auto=format&fit=crop&q=80',
+    title: 'Cà phê muối',
+  },
+  {
+    day: 'T4',
+    date: '11/9',
+    amount: '320k',
+    num: 320000,
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80',
+    title: 'Siêu thị cuối tuần',
+  },
+  {
+    day: 'T5',
+    date: '12/9',
+    amount: '150k',
+    num: 150000,
+    imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=100&auto=format&fit=crop&q=80',
+    title: 'Pizza nướng củi',
+  },
+  {
+    day: 'T6',
+    date: '13/9',
+    amount: '65k',
+    num: 65000,
+    imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=100&auto=format&fit=crop&q=80',
+    title: 'Trà sen vàng',
+  },
+  {
+    day: 'T7',
+    date: '14/9',
+    amount: '120k',
+    num: 120000,
+    imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=100&auto=format&fit=crop&q=80',
+    title: 'Bánh ngọt & brunch',
+  },
+  {
+    day: 'CN',
+    date: '15/9',
+    amount: '185k',
+    num: 185000,
+    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBz7Og1t0m1z9K_RGwF9SXVJzomEb6aBXeI4XhTIK2PDnmqwOSyo5r1W14xu1YwLq7B3qoEQMBl8BibYeTlDKGaJu2Y7LvAKWehNI-_EeA0HK7b3HqLI8TMVKgxpMoOZ1Pe1KCzygItXTMC4gXn_7oMQpzThYHUrknycrgQea0WDJA-l16mvxtxo8pOEtI3-NQChGQU0CYQj-TioonQmI9sI2arOWCoF28D6gW_rjA03CywtuVcIeoW',
+    isToday: true,
+    title: 'Bún bò Huế & Cafe',
+  },
 ];
 
-export const MobileHomeScreen: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
+const DEFAULT_TODAY_ITEMS = [
+  {
+    id: 'html_1',
+    title: 'Bún bò Huế',
+    amount: 85000,
+    time: '12:30',
+    photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBz7Og1t0m1z9K_RGwF9SXVJzomEb6aBXeI4XhTIK2PDnmqwOSyo5r1W14xu1YwLq7B3qoEQMBl8BibYeTlDKGaJu2Y7LvAKWehNI-_EeA0HK7b3HqLI8TMVKgxpMoOZ1Pe1KCzygItXTMC4gXn_7oMQpzThYHUrknycrgQea0WDJA-l16mvxtxo8pOEtI3-NQChGQU0CYQj-TioonQmI9sI2arOWCoF28D6gW_rjA03CywtuVcIeoW',
+    categoryId: 'food',
+    type: 'expense' as const,
+    date: '2026-09-15',
+    wallet: 'Tiền mặt',
+  },
+  {
+    id: 'html_2',
+    title: 'Cà phê',
+    amount: 45000,
+    time: '10:15',
+    photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDrO8vRBFSVc2dkca-rgxi0JQV3Sz8lPpepEQoPYsvW_VjYVRy68LNwo55X7wpEMj-_Blprw0NLfoQtl22J_w58jMEqBFtocf_Qqef8S0hkGSeQdIBcFWKhXqP5uj0yRySTlFurbFSOu91TvtuVZjJq1q3_rWLr-LIsTPnWWwAE7jj-CUJALxyX9g-r_o-NxQwIfZVoMn-w-vWLwU_juOZo_SCzpCx4RwxMlkpz4V5H-0ePXByhCMWv',
+    categoryId: 'food',
+    type: 'expense' as const,
+    date: '2026-09-15',
+    wallet: 'MoMo',
+  },
+  {
+    id: 'html_3',
+    title: 'Xăng xe',
+    amount: 55000,
+    time: '08:20',
+    photoUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBucZxCmCFEzb_r08Te0gvFCCspEnEVC_GCGe8mgAwYZetoBnF6hn98mmAZDoJ_VVpuQM3Qlbufe0xEvnX5lIpXoVH_zY2jTsrXnVfBomrjQLtvvDQ8t93IYfzmcCgL0sz-RXGbOrCPlAbO4PGSd8vJ9IrrDb3m_rY2y7MppJvJNRyZqcaHIb9bpJxGmosOY8RDGDUoy3-Os4P3QI4WjzrdtS53oIzp-CnzkSmb0wO0Vvb8ORUI8c0d',
+    categoryId: 'transport',
+    type: 'expense' as const,
+    date: '2026-09-15',
+    wallet: 'Tiền mặt',
+  },
+];
+
+export const MobileHomeScreen: React.FC<MobileHomeScreenProps> = ({
+  onNavigateTab,
+  onOpenQuickSave,
+  onOpenAddExpense,
+  onSelectTransaction,
+  onViewPhoto,
+}) => {
+  const { user, transactions, language } = useApp();
+  const [selectedDay, setSelectedDay] = useState<string>('CN');
+  const [hasNotification, setHasNotification] = useState(true);
+
   const isVi = language === 'vi';
+  // User name in HTML is "Bảo"
+  const firstName = user?.fullName?.split(' ').pop() || 'Bảo';
 
-  // Giao diện chính mở trực tiếp Camera theo đúng yêu cầu người dùng
-  const [activeTab, setActiveTab] = useState<MobileTab>('camera');
-  const [selectedDate, setSelectedDate] = useState<number>(18);
-  const [transactions, setTransactions] = useState<TransactionItem[]>(INITIAL_TRANSACTIONS);
+  // Merge today transactions with dynamic state
+  const realTodayExpenses = transactions.filter((t) => t.type === 'expense');
+  const displayItems = realTodayExpenses.length > 0 ? realTodayExpenses : DEFAULT_TODAY_ITEMS;
 
-  // Modal xem ảnh phóng to
-  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  // Calculate today's total
+  const todayTotal = displayItems.reduce((acc, cur) => acc + cur.amount, 0);
 
-  // Modal Thêm Chi Tiêu Bằng Tay
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newAmount, setNewAmount] = useState('');
-  const [newCategory, setNewCategory] = useState('Ẩm thực');
-  const [newNote, setNewNote] = useState('');
-
-  // Tên hiển thị người dùng
-  const displayName = user?.fullName || (user?.email ? user.email.split('@')[0] : 'Mai Linh');
-  const userAvatarUri =
-    user?.avatarUrl ||
-    'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop';
-
-  const formatVND = (val: number) => {
-    return Math.abs(val).toLocaleString('vi-VN') + 'đ';
-  };
-
-  // Tính toán số dư
-  const totalSpent = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((acc, cur) => acc + Math.abs(cur.amount), 0);
-  const budgetLimit = 22000000;
-  const remainingBudget = Math.max(0, budgetLimit - totalSpent);
-  const remainingPercent = ((remainingBudget / budgetLimit) * 100).toFixed(1);
-
-  // Xử lý lưu khoảnh khắc chi tiêu từ Camera chụp ảnh
-  const handleSaveMoment = (moment: {
-    photoUri: string;
-    title: string;
-    amount: number;
-    category: string;
-    note?: string;
-  }) => {
-    const newTx: TransactionItem = {
-      id: 'tx-' + Date.now(),
-      title: moment.title,
-      category: moment.category,
-      categoryIcon:
-        moment.category === 'Ẩm thực'
-          ? '🍕'
-          : moment.category === 'Đồ uống'
-          ? '☕'
-          : moment.category === 'Mua sắm'
-          ? '🛍️'
-          : moment.category === 'Di chuyển'
-          ? '🚗'
-          : '📸',
-      amount: -moment.amount,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      note: moment.note,
-      photoUri: moment.photoUri,
-      type: 'expense',
-    };
-
-    setTransactions((prev) => [newTx, ...prev]);
-  };
-
-  // Xử lý thêm chi tiêu bằng tay
-  const handleAddTransaction = () => {
-    const parsedAmount = parseInt(newAmount.replace(/[^0-9]/g, ''), 10);
-    if (!newTitle.trim()) {
-      Alert.alert(isVi ? 'Thiếu thông tin' : 'Missing Info', isVi ? 'Vui lòng nhập tên khoản chi.' : 'Enter title.');
-      return;
-    }
-    if (!parsedAmount || isNaN(parsedAmount)) {
-      Alert.alert(isVi ? 'Thiếu số tiền' : 'Missing Amount', isVi ? 'Vui lòng nhập số tiền hợp lệ.' : 'Enter amount.');
-      return;
-    }
-
-    const newTx: TransactionItem = {
-      id: 'tx-' + Date.now(),
-      title: newTitle.trim(),
-      category: newCategory,
-      categoryIcon: newCategory === 'Ẩm thực' ? '🍕' : newCategory === 'Di chuyển' ? '🚗' : newCategory === 'Mua sắm' ? '🛍️' : '💳',
-      amount: -parsedAmount,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      note: newNote.trim() || undefined,
-      type: 'expense',
-    };
-
-    setTransactions([newTx, ...transactions]);
-    setShowAddModal(false);
-    setNewTitle('');
-    setNewAmount('');
-    setNewNote('');
-    Alert.alert(isVi ? 'Thành công' : 'Success', isVi ? 'Đã lưu chi tiêu vào nhật ký Monett! 🎉' : 'Expense recorded!');
-  };
-
-  // =========================================================================
-  // NẾU ĐANG Ở TAB CAMERA: RENDER TRỰC TIẾP GIAO DIỆN CAMERA CHỤP HÌNH LOCKET
-  // =========================================================================
-  if (activeTab === 'camera') {
-    return (
-      <MobileCameraScreen
-        onNavigateTab={(tab) => {
-          if (tab === 'camera') return;
-          setActiveTab(tab as MobileTab);
-        }}
-        onOpenProfile={() => setActiveTab('profile')}
-        onSaveMoment={handleSaveMoment}
-      />
-    );
-  }
+  // Active banner image
+  const bannerImage =
+    displayItems[0]?.photoUrl ||
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuAjRPNtBd1I8RMVGIeJcfBoVExsIeAfCMCXSUmTF8qsr1CzBWi8aZm97yG7uDuUbe_wyorSwHvxdCHmTb4Mf6ot90iJLmym8bW5yFybhKeg5OOlNpsVP7HaBlZNVv9IAC8SooAvmD_XtKQxs_huWdObM_tktcuavw1KBXqGOfcJm6XwI7n49L1lShvWzmKNFhftZpeAqgyoxcF07BYdpyi4J9GHVpE4r1019tG8xQqOzntcVginXdXF';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-
+    <div className="w-full pb-24 px-4 font-sans select-none">
       {/* ============================================================ */}
-      {/* 1. TOP HEADER BAR                                             */}
+      {/* BEGIN: HeaderNav (Monett Brand Logo)                          */}
       {/* ============================================================ */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require('../../../assets/monett-brand-logo.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <View style={styles.headerTextGroup}>
-            <Text style={styles.brandTitle}>Monett</Text>
-            <Text style={styles.brandSubtitle}>
-              {activeTab === 'home'
-                ? isVi ? 'Trang Chủ' : 'Home'
-                : activeTab === 'journal'
-                ? isVi ? 'Nhật Ký Ảnh' : 'Photo Journal'
-                : isVi ? 'Cá Nhân' : 'Profile'}
-            </Text>
-          </View>
-        </View>
+      <section className="flex items-center justify-between mt-2.5 mb-3" data-purpose="brand-bar">
+        {/* Logo Monett */}
+        <div
+          className="flex items-center cursor-pointer transition-transform active:scale-95"
+          onClick={() => onNavigateTab('home')}
+          title="Monett - Money Moments"
+        >
+          <MonettLogo className="h-9 w-auto" size={132} />
+        </div>
 
-        <View style={styles.headerRight}>
-          {/* Streak Flame Badge */}
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakFlame}>🔥</Text>
-            <Text style={styles.streakCount}>5</Text>
-          </View>
-
-          {/* User Mini Avatar */}
-          <TouchableOpacity
-            style={styles.avatarMiniWrap}
-            onPress={() => setActiveTab('profile')}
-            activeOpacity={0.8}
+        {/* Notification & User Avatar */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Thông báo"
+            onClick={() => setHasNotification(!hasNotification)}
+            className="relative text-gray-600 hover:text-gray-800 p-1 transition-colors active:scale-95"
           >
-            <Image source={{ uri: userAvatarUri }} style={styles.avatarMini} />
-          </TouchableOpacity>
-        </View>
-      </View>
+            <Bell className="w-5 h-5 text-gray-700" />
+            {hasNotification && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigateTab('profile')}
+            className="focus:outline-none"
+          >
+            <img
+              alt={`Avatar ${firstName}`}
+              className="w-8 h-8 rounded-full object-cover border border-emerald-500 shadow-sm active:scale-95 transition-transform"
+              src={
+                user?.avatarUrl ||
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuB83BoDsYYhiLXb84iFSwpr4E7F2-_uh1RH7qlOCfyzpxQJqxmI1FjJZc66FWYZ-jPYuFU3w7r2Qdj3b32erTbAMliUfGLyBmsW1PF79rD7h2Axwaqc30I_gfXFP5pyLcZ4UgfCQrpGPlHuBQ4r6YnLpa2XpFFWa7XIBYlWFCENfaa08c021dEnJP0O4zdHoaHbqq1dG1jPXua9Kefx7dDM6WGuQ1svrGej1GhH3ogxeciGloWA4JSx'
+              }
+            />
+          </button>
+        </div>
+      </section>
+      {/* END: HeaderNav */}
 
       {/* ============================================================ */}
-      {/* 2. MAIN SCROLLABLE CONTENT (HOME / JOURNAL / PROFILE)        */}
+      {/* BEGIN: GreetingSection (Matches HTML exactly)                */}
       {/* ============================================================ */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <section className="mb-3.5" data-purpose="greeting">
+        <p className="text-xs font-normal text-gray-500">
+          {isVi ? 'Chào buổi sáng,' : 'Good morning,'}
+        </p>
+        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-1.5">
+          {firstName} <span className="text-xl">👋</span>
+        </h1>
+      </section>
+      {/* END: GreetingSection */}
+
+      {/* ============================================================ */}
+      {/* BEGIN: DailyExpenseBanner (Signature emerald card in HTML)   */}
+      {/* ============================================================ */}
+      <section
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0d3b37] via-[#104b45] to-[#145a53] p-4 text-white shadow-md mb-5 cursor-pointer active:scale-[0.99] transition-transform"
+        data-purpose="summary-card"
+        onClick={onOpenAddExpense}
       >
-        {/* ========================================================== */}
-        {/* TAB 1: HOME (FINANCIAL OVERVIEW & BUDGET)                   */}
-        {/* ========================================================== */}
-        {activeTab === 'home' && (
-          <>
-            {/* GREETING ROW */}
-            <View style={styles.greetingSection}>
-              <View style={styles.avatarBigWrapper}>
-                <Image source={{ uri: userAvatarUri }} style={styles.avatarBig} />
-                <View style={styles.onlineDot} />
-              </View>
+        <div className="relative z-10 flex justify-between items-center">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs text-emerald-200">
+              <Calendar className="w-3 h-3 text-[11px]" />
+              <span className="font-medium">
+                {isVi ? 'Hôm nay, 15/09' : 'Today, Sep 15'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-300 font-light">
+              {isVi ? 'Bạn đã chi' : 'You spent'}
+            </p>
+            <p className="text-2xl font-bold tracking-tight">
+              {todayTotal.toLocaleString('vi-VN')} đ
+            </p>
+            <div className="inline-flex items-center gap-1 bg-[#1a645d] text-emerald-200 text-[11px] font-medium px-2 py-0.5 rounded-full mt-1">
+              <ArrowDown className="w-2.5 h-2.5" />
+              <span>{isVi ? '12% so với hôm qua' : '12% vs yesterday'}</span>
+            </div>
+          </div>
 
-              <View style={styles.greetingTextCol}>
-                <Text style={styles.greetingTitle}>
-                  {isVi ? `Chào ${displayName}!` : `Hi ${displayName}!`} ✨
-                </Text>
-                <Text style={styles.greetingSubtitle}>
-                  {isVi ? 'Hôm nay bạn chi tiêu thế nào?' : 'How is your spending today?'}
-                </Text>
-              </View>
+          {/* Thumbnail minh hoạ đồ ăn trong card */}
+          <div
+            className="w-20 h-20 rounded-xl overflow-hidden shadow-inner border border-white/10 shrink-0 relative group"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewPhoto(bannerImage);
+            }}
+          >
+            <img
+              alt="Bữa ăn hôm nay"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              src={bannerImage}
+            />
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* END: DailyExpenseBanner */}
 
-              <TouchableOpacity
-                style={styles.openCameraPill}
-                onPress={() => setActiveTab('camera')}
-                activeOpacity={0.8}
+      {/* ============================================================ */}
+      {/* BEGIN: WeeklyOverviewSection (Matches HTML TUẦN NÀY)          */}
+      {/* ============================================================ */}
+      <section className="mb-5" data-purpose="weekly-overview">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-bold text-gray-900 tracking-wider">
+            {isVi ? 'TUẦN NÀY' : 'THIS WEEK'}
+          </h2>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('analytics')}
+            className="text-xs font-medium text-emerald-700 hover:text-emerald-800 flex items-center gap-0.5"
+          >
+            <span>{isVi ? 'Xem tất cả' : 'View all'}</span>
+            <ChevronRight className="w-3 h-3 text-[9px] ml-0.5" />
+          </button>
+        </div>
+
+        {/* Weekly mini bar chart / cards */}
+        <div className="grid grid-cols-7 gap-1.5 bg-gray-50/80 p-2.5 rounded-2xl border border-gray-100">
+          {WEEK_DAYS.map((day) => {
+            const isSelected = selectedDay === day.day;
+            const isToday = day.isToday;
+
+            return (
+              <button
+                key={day.day}
+                type="button"
+                onClick={() => setSelectedDay(day.day)}
+                className={`flex flex-col items-center rounded-xl transition-all ${
+                  isToday || isSelected
+                    ? 'bg-emerald-50 py-1 px-1 border border-emerald-200 shadow-sm'
+                    : 'py-0.5'
+                }`}
               >
-                <Text style={styles.openCameraPillIcon}>📷</Text>
-                <Text style={styles.openCameraPillText}>Chụp</Text>
-              </TouchableOpacity>
-            </View>
+                <span
+                  className={`text-[10px] ${
+                    isToday || isSelected
+                      ? 'font-bold text-emerald-800'
+                      : 'font-medium text-gray-500'
+                  }`}
+                >
+                  {day.day}
+                </span>
+                <span
+                  className={`text-[9px] mb-1.5 ${
+                    isToday || isSelected
+                      ? 'text-emerald-600 font-medium'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {day.date}
+                </span>
 
-            {/* THE SIGNATURE EMERALD BUDGET CARD */}
-            <View style={styles.budgetCard}>
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.cardHeaderLeft}>
-                  <Text style={styles.cardHeaderIcon}>💳</Text>
-                  <Text style={styles.cardHeaderTag}>
-                    {isVi ? 'HẠN MỨC THÁNG 10' : 'OCTOBER BUDGET'}
-                  </Text>
-                </View>
-                <Text style={styles.cardTotalLimit}>{formatVND(budgetLimit)}</Text>
-              </View>
+                <div
+                  className={`w-full h-12 rounded-lg overflow-hidden shadow-sm border ${
+                    isToday || isSelected
+                      ? 'border-emerald-500 ring-2 ring-emerald-200'
+                      : 'border-gray-200'
+                  }`}
+                >
+                  <img
+                    alt={day.day}
+                    className="w-full h-full object-cover hover:scale-110 transition-transform"
+                    src={day.imageUrl}
+                  />
+                </div>
 
-              <Text style={styles.cardSubLabel}>
-                {isVi ? 'Số dư khả dụng tháng' : 'Monthly Available Balance'}
-              </Text>
-              <Text style={styles.cardMainBalance}>{formatVND(remainingBudget)}</Text>
+                <span
+                  className={`text-[10px] mt-1.5 ${
+                    isToday || isSelected
+                      ? 'font-bold text-emerald-900'
+                      : 'font-semibold text-gray-700'
+                  }`}
+                >
+                  {day.amount}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+      {/* END: WeeklyOverviewSection */}
 
-              {/* Progress Bar */}
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBarBg}>
-                  <View style={[styles.progressBarFill, { width: `${remainingPercent}%` as any }]} />
-                </View>
-                <View style={styles.progressTextRow}>
-                  <Text style={styles.progressTextLeft}>
-                    {isVi
-                      ? `Đã chi: ${formatVND(totalSpent)} (${(100 - parseFloat(remainingPercent)).toFixed(1)}%)`
-                      : `Spent: ${formatVND(totalSpent)}`}
-                  </Text>
-                  <Text style={styles.progressTextRight}>{remainingPercent}% còn lại</Text>
-                </View>
-              </View>
-            </View>
+      {/* ============================================================ */}
+      {/* BEGIN: TodayExpensesSection (Horizontal scrolling cards)     */}
+      {/* ============================================================ */}
+      <section className="mb-4" data-purpose="today-expense-list">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-bold text-gray-900 tracking-wider">
+            {isVi ? 'HÔM NAY' : 'TODAY'}
+          </h2>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('moments')}
+            className="text-xs font-medium text-gray-400 hover:text-gray-600 flex items-center gap-0.5"
+          >
+            <span>{isVi ? 'Xem tất cả' : 'View all'}</span>
+            <ChevronRight className="w-3 h-3 text-[9px] ml-0.5" />
+          </button>
+        </div>
 
-            {/* WEEKLY CALENDAR STRIP */}
-            <View style={styles.calendarStripContainer}>
-              {WEEK_DAYS.map((day) => {
-                const isSelected = selectedDate === day.date;
-                return (
-                  <TouchableOpacity
-                    key={day.date}
-                    style={[styles.calendarDayCard, isSelected && styles.calendarDayCardActive]}
-                    onPress={() => setSelectedDate(day.date)}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.calendarDayLabel,
-                        isSelected && styles.calendarDayLabelActive,
-                      ]}
-                    >
-                      {day.label}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.calendarDayNumber,
-                        isSelected && styles.calendarDayNumberActive,
-                      ]}
-                    >
-                      {day.date}
-                    </Text>
-                    <Text style={styles.calendarDotIcon}>{isSelected ? '🌱' : '♡'}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* MONETT SMART NOTE */}
-            <View style={styles.monettNoteCard}>
-              <View style={styles.monettNoteLeft}>
-                <Image
-                  source={require('../../../assets/adaptive-icon.png')}
-                  style={styles.monettNoteFrogImg}
-                  resizeMode="contain"
+        {/* Danh sách giao dịch dạng thẻ ngang cuộn ngang */}
+        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 scrollbar-none">
+          {displayItems.map((item) => (
+            <article
+              key={item.id}
+              onClick={() => onSelectTransaction(item)}
+              className="w-28 shrink-0 bg-white border border-gray-150 rounded-2xl p-2 shadow-sm flex flex-col cursor-pointer active:scale-95 transition-all hover:border-emerald-300"
+              data-purpose="expense-item"
+            >
+              <div
+                className="relative w-full h-16 rounded-xl overflow-hidden mb-2 bg-slate-100"
+                onClick={(e) => {
+                  if (item.photoUrl) {
+                    e.stopPropagation();
+                    onViewPhoto(item.photoUrl);
+                  }
+                }}
+              >
+                <img
+                  alt={item.title}
+                  className="w-full h-full object-cover hover:scale-105 transition-transform"
+                  src={
+                    item.photoUrl ||
+                    'https://lh3.googleusercontent.com/aida-public/AB6AXuBz7Og1t0m1z9K_RGwF9SXVJzomEb6aBXeI4XhTIK2PDnmqwOSyo5r1W14xu1YwLq7B3qoEQMBl8BibYeTlDKGaJu2Y7LvAKWehNI-_EeA0HK7b3HqLI8TMVKgxpMoOZ1Pe1KCzygItXTMC4gXn_7oMQpzThYHUrknycrgQea0WDJA-l16mvxtxo8pOEtI3-NQChGQU0CYQj-TioonQmI9sI2arOWCoF28D6gW_rjA03CywtuVcIeoW'
+                  }
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80';
+                  }}
                 />
-              </View>
-              <View style={styles.monettNoteBody}>
-                <Text style={styles.monettNoteTitle}>
-                  {isVi ? 'Lời nhắn Monett hôm nay' : 'Monett Daily Tip'} 🌱
-                </Text>
-                <Text style={styles.monettNoteContent}>
-                  {isVi
-                    ? 'Hôm nay bạn chi tiêu trong tầm kiểm soát rất tốt. Hãy chụp lại hóa đơn các món vừa chi để lưu giữ khoảnh khắc nhé!'
-                    : 'Spending is well within budget. Snap photos of your expenses to keep track of financial moments!'}
-                </Text>
-              </View>
-            </View>
+              </div>
 
-            {/* RECENT TRANSACTIONS */}
-            <View style={styles.txSectionHeader}>
-              <View style={styles.txTitleGroup}>
-                <Text style={styles.txIcon}>📊</Text>
-                <Text style={styles.txMainTitle}>
-                  {isVi ? 'Nhật ký tài chính · Hôm nay' : 'Financial Log · Today'}
-                </Text>
-              </View>
-              <View style={styles.txSummaryBadge}>
-                <Text style={styles.txSummaryText}>
-                  {isVi ? `${formatVND(totalSpent)} đã chi` : `${formatVND(totalSpent)} spent`}
-                </Text>
-              </View>
-            </View>
+              <span className="text-xs font-semibold text-gray-900 truncate">
+                {item.title}
+              </span>
+              <span className="text-xs font-bold text-rose-500 mt-0.5">
+                -{item.amount.toLocaleString('vi-VN')} đ
+              </span>
+              <span className="text-[10px] text-gray-400 mt-0.5 font-normal">
+                {item.time || '12:30'}
+              </span>
+            </article>
+          ))}
+        </div>
 
-            <View style={styles.txListContainer}>
-              {transactions.map((tx) => {
-                const isExpense = tx.type === 'expense';
-                return (
-                  <View key={tx.id} style={styles.txCardItem}>
-                    {/* Thumbnail ảnh nếu có, hoặc icon danh mục */}
-                    {tx.photoUri ? (
-                      <TouchableOpacity
-                        onPress={() => setViewingPhoto(tx.photoUri || null)}
-                        activeOpacity={0.8}
-                      >
-                        <Image source={{ uri: tx.photoUri }} style={styles.txPhotoThumb} />
-                        <View style={styles.txPhotoBadge}>
-                          <Text style={styles.txPhotoBadgeText}>📸</Text>
-                        </View>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.txCategoryCircle}>
-                        <Text style={styles.txCategoryEmoji}>{tx.categoryIcon}</Text>
-                      </View>
-                    )}
+        {/* Tổng hôm nay */}
+        <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-gray-100 px-1">
+          <span className="text-xs text-gray-500 font-medium">
+            {isVi ? 'Tổng hôm nay' : "Today's total"}
+          </span>
+          <span className="text-sm font-bold text-rose-500">
+            -{todayTotal.toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+      </section>
+      {/* END: TodayExpensesSection */}
 
-                    <View style={styles.txInfoCol}>
-                      <Text style={styles.txItemTitle} numberOfLines={1}>
-                        {tx.title}
-                      </Text>
-                      <View style={styles.txItemMetaRow}>
-                        <Text style={styles.txItemCategory}>{tx.category}</Text>
-                        <Text style={styles.txMetaDot}>•</Text>
-                        <Text style={styles.txItemTime}>{tx.time}</Text>
-                        {tx.note ? (
-                          <>
-                            <Text style={styles.txMetaDot}>•</Text>
-                            <Text style={styles.txItemNote} numberOfLines={1}>
-                              {tx.note}
-                            </Text>
-                          </>
-                        ) : null}
-                      </View>
-                    </View>
-
-                    <View style={styles.txAmountCol}>
-                      <Text
-                        style={[
-                          styles.txAmountText,
-                          isExpense ? styles.txAmountExpense : styles.txAmountIncome,
-                        ]}
-                      >
-                        {isExpense ? `-${formatVND(tx.amount)}` : `+${formatVND(tx.amount)}`}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </>
-        )}
-
-        {/* ========================================================== */}
-        {/* TAB 2: JOURNAL (KHOẢNH KHẮC ẢNH & CHI TIÊU)                 */}
-        {/* ========================================================== */}
-        {activeTab === 'journal' && (
-          <View style={styles.journalContainer}>
-            <View style={styles.journalBanner}>
-              <View style={styles.journalBannerTextCol}>
-                <Text style={styles.journalBannerTitle}>Khoảnh Khắc Chi Tiêu 📸</Text>
-                <Text style={styles.journalBannerSubtitle}>
-                  Mỗi hóa đơn là một khoảnh khắc sống động của bạn cùng Monett
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.journalSnapBtn}
-                onPress={() => setActiveTab('camera')}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.journalSnapBtnText}>Chụp Ảnh 📷</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Danh sách ảnh & thẻ chi tiêu */}
-            <View style={styles.momentsGrid}>
-              {transactions.map((tx) => (
-                <View key={tx.id} style={styles.momentCard}>
-                  {tx.photoUri ? (
-                    <TouchableOpacity
-                      onPress={() => setViewingPhoto(tx.photoUri || null)}
-                      activeOpacity={0.9}
-                      style={styles.momentPhotoWrap}
-                    >
-                      <Image source={{ uri: tx.photoUri }} style={styles.momentPhoto} />
-                      <View style={styles.momentBadgePill}>
-                        <Text style={styles.momentBadgeText}>{formatVND(tx.amount)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.momentNoPhotoWrap}>
-                      <Text style={styles.momentNoPhotoIcon}>{tx.categoryIcon}</Text>
-                      <TouchableOpacity
-                        style={styles.momentAddPhotoBtn}
-                        onPress={() => setActiveTab('camera')}
-                      >
-                        <Text style={styles.momentAddPhotoText}>+ Chụp ảnh</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  <View style={styles.momentCardBody}>
-                    <Text style={styles.momentCardTitle} numberOfLines={1}>
-                      {tx.title}
-                    </Text>
-                    <View style={styles.momentMetaRow}>
-                      <Text style={styles.momentMetaCategory}>{tx.category}</Text>
-                      <Text style={styles.momentMetaTime}>{tx.time}</Text>
-                    </View>
-                    {tx.note ? (
-                      <Text style={styles.momentCardNote} numberOfLines={2}>
-                        "{tx.note}"
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* ========================================================== */}
-        {/* TAB 3: PROFILE (TÀI KHOẢN & CÀI ĐẶT)                         */}
-        {/* ========================================================== */}
-        {activeTab === 'profile' && (
-          <View style={styles.profileContainer}>
-            <View style={styles.profileHeaderCard}>
-              <Image source={{ uri: userAvatarUri }} style={styles.profileLargeAvatar} />
-              <Text style={styles.profileNameText}>{displayName}</Text>
-              <Text style={styles.profileEmailText}>{user?.email || 'lenguyenanhmai05@gmail.com'}</Text>
-              <View style={styles.profilePill}>
-                <Text style={styles.profilePillText}>🌟 Monett Pioneer</Text>
-              </View>
-            </View>
-
-            {/* Language Switch */}
-            <View style={styles.profileActionCard}>
-              <Text style={styles.profileActionLabel}>
-                {isVi ? 'Ngôn ngữ hiển thị' : 'Language'}
-              </Text>
-              <View style={styles.langToggleRow}>
-                <TouchableOpacity
-                  style={[styles.langBtn, isVi && styles.langBtnActive]}
-                  onPress={() => setLanguage('vi')}
-                >
-                  <Text style={styles.langBtnText}>🇻🇳 Tiếng Việt</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.langBtn, !isVi && styles.langBtnActive]}
-                  onPress={() => setLanguage('en')}
-                >
-                  <Text style={styles.langBtnText}>🇺🇸 English</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Quick Button to Camera */}
-            <TouchableOpacity
-              style={styles.profileActionBtn}
-              onPress={() => setActiveTab('camera')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.profileActionBtnText}>📷 Mở Camera Chụp Ảnh</Text>
-            </TouchableOpacity>
-
-            {/* Logout Button */}
-            <TouchableOpacity
-              style={styles.logoutBtn}
-              onPress={() => {
-                Alert.alert(
-                  isVi ? 'Đăng xuất' : 'Log Out',
-                  isVi ? 'Bạn có chắc muốn đăng xuất khỏi Monett?' : 'Are you sure?',
-                  [
-                    { text: isVi ? 'Hủy' : 'Cancel', style: 'cancel' },
-                    { text: isVi ? 'Đăng xuất' : 'Log Out', style: 'destructive', onPress: logout },
-                  ]
-                );
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.logoutBtnText}>🚪 {isVi ? 'Đăng xuất tài khoản' : 'Log Out'}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* ============================================================ */}
-      {/* 3. UNIFORM BOTTOM NAVIGATION DOCK (MATCHING CAMERA DOCK)     */}
-      {/* ============================================================ */}
-      <View style={styles.bottomNavWrapper}>
-        <View style={styles.bottomDockPill}>
-          {/* 1. Trang chủ */}
-          <TouchableOpacity
-            style={[styles.dockItemBtn, activeTab === 'home' && styles.dockItemBtnActiveHome]}
-            onPress={() => setActiveTab('home')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.dockItemEmoji}>🏠</Text>
-          </TouchableOpacity>
-
-          {/* 2. Camera (Active Coral-Pink Circle) */}
-          <TouchableOpacity
-            style={[styles.dockItemBtn, styles.dockItemBtnActiveCamera]}
-            onPress={() => setActiveTab('camera')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.dockItemCameraEmoji}>📷</Text>
-          </TouchableOpacity>
-
-          {/* 3. Nhật ký */}
-          <TouchableOpacity
-            style={[styles.dockItemBtn, activeTab === 'journal' && styles.dockItemBtnActiveJournal]}
-            onPress={() => setActiveTab('journal')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.dockItemEmoji}>🧾</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Modal Phóng To Ảnh */}
-      <Modal visible={!!viewingPhoto} transparent animationType="fade">
-        <View style={styles.photoViewBackdrop}>
-          <TouchableOpacity
-            style={styles.photoViewCloseBtn}
-            onPress={() => setViewingPhoto(null)}
-          >
-            <Text style={styles.photoViewCloseText}>✕ Đóng</Text>
-          </TouchableOpacity>
-          {viewingPhoto && (
-            <Image source={{ uri: viewingPhoto }} style={styles.photoViewFullImg} resizeMode="contain" />
-          )}
-        </View>
-      </Modal>
-    </SafeAreaView>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-
-  // 1. TOP HEADER
-  topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 8 : 14,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerLogo: {
-    width: 38,
-    height: 38,
-    marginRight: 10,
-  },
-  headerTextGroup: {
-    justifyContent: 'center',
-  },
-  brandTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#064E3B',
-    letterSpacing: -0.3,
-  },
-  brandSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  streakFlame: {
-    fontSize: 14,
-    marginRight: 3,
-  },
-  streakCount: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#D97706',
-  },
-  avatarMiniWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#10B981',
-    overflow: 'hidden',
-  },
-  avatarMini: {
-    width: '100%',
-    height: '100%',
-  },
-
-  // SCROLL CONTENT
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-
-  // GREETING
-  greetingSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarBigWrapper: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  avatarBig: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#10B981',
-  },
-  onlineDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 13,
-    height: 13,
-    borderRadius: 7,
-    backgroundColor: '#10B981',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  greetingTextCol: {
-    flex: 1,
-  },
-  greetingTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  greetingSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  openCameraPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#047857',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    gap: 4,
-  },
-  openCameraPillIcon: {
-    fontSize: 13,
-  },
-  openCameraPillText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-
-  // BUDGET CARD
-  budgetCard: {
-    backgroundColor: '#064E3B',
-    borderRadius: 22,
-    padding: 20,
-    marginBottom: 18,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardHeaderIcon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  cardHeaderTag: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#A7F3D0',
-    letterSpacing: 0.5,
-  },
-  cardTotalLimit: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#D1FAE5',
-  },
-  cardSubLabel: {
-    fontSize: 13,
-    color: '#A7F3D0',
-    fontWeight: '600',
-  },
-  cardMainBalance: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginTop: 4,
-    marginBottom: 16,
-    letterSpacing: -0.5,
-  },
-  progressContainer: {
-    marginTop: 4,
-  },
-  progressBarBg: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#34D399',
-    borderRadius: 4,
-  },
-  progressTextRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  progressTextLeft: {
-    fontSize: 11,
-    color: '#D1FAE5',
-    fontWeight: '600',
-  },
-  progressTextRight: {
-    fontSize: 11,
-    color: '#6EE7B7',
-    fontWeight: '800',
-  },
-
-  // CALENDAR STRIP
-  calendarStripContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  calendarDayCard: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    minWidth: (SCREEN_WIDTH - 40 - 36) / 7,
-  },
-  calendarDayCardActive: {
-    backgroundColor: '#047857',
-    borderColor: '#047857',
-  },
-  calendarDayLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  calendarDayLabelActive: {
-    color: '#A7F3D0',
-  },
-  calendarDayNumber: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  calendarDayNumberActive: {
-    color: '#FFFFFF',
-  },
-  calendarDotIcon: {
-    fontSize: 10,
-    color: '#10B981',
-  },
-
-  // MONETT NOTE
-  monettNoteCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 20,
-  },
-  monettNoteLeft: {
-    marginRight: 12,
-  },
-  monettNoteFrogImg: {
-    width: 36,
-    height: 36,
-  },
-  monettNoteBody: {
-    flex: 1,
-  },
-  monettNoteTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#065F46',
-    marginBottom: 3,
-  },
-  monettNoteContent: {
-    fontSize: 12,
-    color: '#047857',
-    lineHeight: 17,
-  },
-
-  // TRANSACTIONS
-  txSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  txTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  txIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  txMainTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  txSummaryBadge: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  txSummaryText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  txListContainer: {
-    gap: 10,
-  },
-  txCardItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  txCategoryCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  txCategoryEmoji: {
-    fontSize: 20,
-  },
-  txPhotoThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    marginRight: 12,
-  },
-  txPhotoBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: 8,
-    backgroundColor: '#047857',
-    borderRadius: 6,
-    paddingHorizontal: 2,
-  },
-  txPhotoBadgeText: {
-    fontSize: 9,
-  },
-  txInfoCol: {
-    flex: 1,
-  },
-  txItemTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 3,
-  },
-  txItemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  txItemCategory: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  txMetaDot: {
-    fontSize: 10,
-    color: '#CBD5E1',
-    marginHorizontal: 4,
-  },
-  txItemTime: {
-    fontSize: 11,
-    color: '#94A3B8',
-  },
-  txItemNote: {
-    fontSize: 11,
-    color: '#047857',
-    fontWeight: '600',
-    flex: 1,
-  },
-  txAmountCol: {
-    alignItems: 'flex-end',
-  },
-  txAmountText: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  txAmountExpense: {
-    color: '#EF4444',
-  },
-  txAmountIncome: {
-    color: '#10B981',
-  },
-
-  // JOURNAL TAB
-  journalContainer: {
-    paddingBottom: 20,
-  },
-  journalBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#064E3B',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-  },
-  journalBannerTextCol: {
-    flex: 1,
-    marginRight: 12,
-  },
-  journalBannerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  journalBannerSubtitle: {
-    fontSize: 12,
-    color: '#A7F3D0',
-    lineHeight: 16,
-  },
-  journalSnapBtn: {
-    backgroundColor: '#FB7185',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 16,
-  },
-  journalSnapBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  momentsGrid: {
-    gap: 14,
-  },
-  momentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-  },
-  momentPhotoWrap: {
-    height: 180,
-    position: 'relative',
-    backgroundColor: '#000000',
-  },
-  momentPhoto: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  momentBadgePill: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  momentBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  momentNoPhotoWrap: {
-    height: 100,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  momentNoPhotoIcon: {
-    fontSize: 32,
-    marginBottom: 6,
-  },
-  momentAddPhotoBtn: {
-    backgroundColor: '#047857',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  momentAddPhotoText: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  momentCardBody: {
-    padding: 14,
-  },
-  momentCardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  momentMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  momentMetaCategory: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#047857',
-  },
-  momentMetaTime: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
-  momentCardNote: {
-    fontSize: 12,
-    color: '#475569',
-    fontStyle: 'italic',
-  },
-
-  // PROFILE TAB
-  profileContainer: {
-    gap: 16,
-  },
-  profileHeaderCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  profileLargeAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#10B981',
-    marginBottom: 12,
-  },
-  profileNameText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  profileEmailText: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 12,
-  },
-  profilePill: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  profilePillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#B45309',
-  },
-  profileActionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  profileActionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 12,
-  },
-  langToggleRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  langBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  langBtnActive: {
-    backgroundColor: '#047857',
-    borderColor: '#047857',
-  },
-  langBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  profileActionBtn: {
-    backgroundColor: '#047857',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  profileActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  logoutBtn: {
-    backgroundColor: '#FEE2E2',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  logoutBtnText: {
-    color: '#DC2626',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-
-  // UNIFORM BOTTOM DOCK
-  bottomNavWrapper: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 14 : 10,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomDockPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#201F25',
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  dockItemBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dockItemBtnActiveHome: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  dockItemBtnActiveJournal: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  dockItemBtnActiveCamera: {
-    backgroundColor: '#FB7185',
-  },
-  dockItemEmoji: {
-    fontSize: 20,
-  },
-  dockItemCameraEmoji: {
-    fontSize: 20,
-    color: '#FFFFFF',
-  },
-
-  // MODAL PHÓNG TO ẢNH
-  photoViewBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoViewCloseBtn: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  photoViewCloseText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  photoViewFullImg: {
-    width: SCREEN_WIDTH * 0.92,
-    height: '75%',
-  },
-});
